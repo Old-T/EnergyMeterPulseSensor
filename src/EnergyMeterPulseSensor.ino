@@ -37,11 +37,7 @@
 // Enable debug prints
 #define MY_DEBUG
 
-// Enable and select radio type attached
-#define MY_RADIO_NRF24
-//#define MY_RADIO_RFM69
-
-#include <MySensors.h>
+//#include <MySensors.h>
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -63,6 +59,8 @@ PubSubClient  mqtt("192.168.2.50", 1883, NULL, client);
 #define PULSE_FACTOR 1000       // Nummber of blinks per KWH of your meeter
 #define SLEEP_MODE false        // Watt-value can only be reported when sleep mode is false.
 #define MAX_WATT 10000          // Max watt value to report. This filetrs outliers.
+#define MY_RADIO_NRF24
+#define CHILD_ID 1              // Id of the sensor child
 
 unsigned long SEND_FREQUENCY =
     20000; // Minimum time between send (in milliseconds). We don't wnat to spam the gateway.
@@ -75,6 +73,7 @@ unsigned long oldPulseCount = 0;
 unsigned long oldWatt = 0;
 double oldKwh;
 unsigned long lastSend;
+
 
 void MQTT_connect()
 {
@@ -158,8 +157,13 @@ void setup()
 
 /*void presentation()
 {
-}
-*/
+  // Send the sketch version information to the gateway and Controller
+sendSketchInfo("Energy Meter", "1.0");
+
+// Register this device as power sensor
+present(CHILD_ID, S_POWER);
+}*/
+
 void loop()
 {
     unsigned long now = millis();
@@ -171,7 +175,7 @@ void loop()
             // Check that we dont get unresonable large watt value.
             // could hapen when long wraps or false interrupt triggered
             if (watt<((unsigned long)MAX_WATT)) {
-                //send(wattMsg.set(watt));  // Send watt value to gw
+                // send(wattMsg.set(watt));  // Send watt value to gw
                 sendDataToMQTT(watt, "Home/Energy/Watt");
                 // ToDo: MQTT
             }
@@ -202,20 +206,20 @@ void loop()
         lastSend=now;
     }
 
-    if (SLEEP_MODE) {
+    /*if (SLEEP_MODE) {
         sleep(SEND_FREQUENCY);
-    }
+    }*/
 }
 
-void receive(const MyMessage &message)
+/*void receive(const MyMessage &message)
 {
-    /*if (message.type==V_VAR1) {
+    if (message.type==V_VAR1) {
         pulseCount = oldPulseCount = message.getLong();
         Serial.print("Received last pulse count from gw:");
         Serial.println(pulseCount);
         pcReceived = true;
-    }*/
-}
+    }
+}*/
 
 void onPulse()
 {
